@@ -19,6 +19,10 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.STRING,
       allowNull: false,
     },
+    accessToken: {
+      type: Sequelize.STRING,
+      allowNull: true,
+    },
     role: {
       type: Sequelize.ENUM("admin", "staff", "student"),
       defaultValue: "staff",
@@ -27,15 +31,15 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.BOOLEAN,
       defaultValue: true,
     },
-    created_at: {
-      allowNull: false,
+    createdAt: {
       type: Sequelize.DATE,
-      defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
+      allowNull: false,
+      defaultValue: Sequelize.fn('now'),
     },
-    updated_at: {
-      allowNull: false,
+    updatedAt: {
       type: Sequelize.DATE,
-      defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
+      allowNull: false,
+      defaultValue: Sequelize.fn('now'),
     },
   });
   return User;

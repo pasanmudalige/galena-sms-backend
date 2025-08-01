@@ -13,8 +13,8 @@ module.exports = {
         password: passwordHash,
         role: 'admin',
         is_active: true,
-        created_at: new Date(),
-        updated_at: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
       {
         full_name: 'Staff Member',
@@ -22,8 +22,8 @@ module.exports = {
         password: passwordHash,
         role: 'staff',
         is_active: true,
-        created_at: new Date(),
-        updated_at: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
     ]);
   },

@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const healthController = require("../controllers/health.controller");
+const authController = require("../controllers/auth.controller");
+const dashboardController = require("../controllers/dashboard.controller");
+const authJwt = require("../middleware/authJwt");
 
-router.get("/auth/login", healthController.healthCheck);
+router.post("/auth/login", authController.login);
+router.get("/auth/getDashboardData",[authJwt.verifyToken], dashboardController.getDashboardData);
 
 module.exports = router;

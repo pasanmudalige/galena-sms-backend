@@ -23,4 +23,12 @@ const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
+db.User = require("./user.model.js")(sequelize, Sequelize);
+
+// Associate models
+Object.keys(db).forEach((modelName) => {
+  if (db[modelName].associate) {
+    db[modelName].associate(db);
+  }
+});
 module.exports = db;

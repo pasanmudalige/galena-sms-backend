@@ -1,173 +1,72 @@
-// auth middleware
-const jwt = require("jsonwebtoken");
-const config = require("../config/auth.config.js");
-const db = require("../models");
-const User = db.user;
-const { httpResponseCode } = require("../constants/httpResponseCode");
+const { User } = require("../models");
+const { StatusCodes } = require("http-status-codes");
+const CommonResponseDTO = require("../dto/CommonResponseDTO");
+const jwtTokenHelper = require("../helpers/jwtToken.helper.js");
 
-const verifyToken = (req, res, next) => {
-  let token = req.headers["x-access-token"];
-
-  if (!token) {
-    return res.status(httpResponseCode.HTTP_RESPONSE_FORBIDDEN).send({
-      message: "No token provided!"
-    });
-  }
-
-  jwt.verify(token, config.secret, async (err, decoded) => {
-    if (err) {
-      return res.status(httpResponseCode.HTTP_RESPONSE_UNAUTHORIZED).send({
-        message: "Unauthorized!"
-      });
-    }
-    else{
-      console.log("OK")
-
-      const user = await User.findOne({ where: { id:decoded.id, accessToken: token } })
-      if(user != null){
-        req.userId = decoded.id;
-      }
-      else{
-        return res.status(httpResponseCode.HTTP_RESPONSE_UNAUTHORIZED).send({
-          message: "Token Expired! Please login"
-        });
-      }
-    }
-    next();
-  });
-};
-
-const isAdmin = (req, res, next) => {
-
+const verifyToken = async (req, res, next) => {
   try {
-    User.findByPk(req.userId).then(user => {
-      if(user.getRoles()){
-        user.getRoles().then(roles => {
-          for (let i = 0; i < roles.length; i++) {
-            if (roles[i].name === "admin") {
-              next();
-              return;
-            }
-          }
-    
-          res.status(httpResponseCode.HTTP_RESPONSE_FORBIDDEN).send({
-            message: "Require Admin Role!"
-          });
-          return;
-        });
-      }
-      else{
-        res.status(httpResponseCode.HTTP_RESPONSE_FORBIDDEN).send({
-          message: "Roles not found"
-        });
-      }
-  
-    }).catch (error=>{
-      res.status(httpResponseCode.HTTP_RESPONSE_FORBIDDEN).send({
-        message: "User Not Found"
-      });
-    });
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res
+        .status(StatusCodes.UNAUTHORIZED)
+        .send(
+          new CommonResponseDTO(
+            StatusCodes.UNAUTHORIZED,
+            "No token provided or invalid format",
+            null,
+            "Authorization header missing or incorrectly formatted."
+          )
+        );
+    }
+
+    const token = authHeader.split(" ")[1];
+    const decoded = await jwtTokenHelper.decodeToken(token);
+
+    const user = await User.findOne({ where: { id: decoded.id } });
+
+    if (!user) {
+      return res
+        .status(StatusCodes.UNAUTHORIZED)
+        .send(
+          new CommonResponseDTO(
+            StatusCodes.UNAUTHORIZED,
+            "Token expired or invalid. Please login again.",
+            null,
+            "User not found or token mismatch."
+          )
+        );
+    }
+
+    if (!user.accessToken) {
+      return res
+        .status(StatusCodes.UNAUTHORIZED)
+        .send(
+          new CommonResponseDTO(
+            StatusCodes.UNAUTHORIZED,
+            "Session expired or invalid. Please log in again.",
+            null,
+            "Access Token not found."
+          )
+        );
+    }
+
+    req.userId = user.id;
+    req.user = user;
+    req.accessToken = token;
+
+    next();
   } catch (error) {
-    res.status(httpResponseCode.HTTP_RESPONSE_FORBIDDEN).send({
-      message: "Roles not found"
-    });
+    return res
+      .status(StatusCodes.UNAUTHORIZED)
+      .send(
+        new CommonResponseDTO(
+          StatusCodes.UNAUTHORIZED,
+          "Invalid access token",
+          error.message || "Token verification failed.",
+          null
+        )
+      );
   }
-
 };
 
-const isUser = (req, res, next) => {
-  User.findByPk(req.userId).then(user => {
-    if(user){
-      user.getRoles().then(roles => {
-        for (let i = 0; i < roles.length; i++) {
-          if (roles[i].name === "user") {
-            next();
-            return;
-          }
-        }
-  
-        res.status(httpResponseCode.HTTP_RESPONSE_FORBIDDEN).send({
-          message: "Require User Role!"
-        });
-        return;
-      });
-    }
-    else{
-      res.status(httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR).send({
-        message: "User Doesn't exist!"
-      });
-    }
-
-  });
-};
-
-const isModerator = (req, res, next) => {
-  User.findByPk(req.userId).then(user => {
-    user.getRoles().then(roles => {
-      for (let i = 0; i < roles.length; i++) {
-        if (roles[i].name === "moderator") {
-          next();
-          return;
-        }
-      }
-
-      res.status(httpResponseCode.HTTP_RESPONSE_FORBIDDEN).send({
-        message: "Require Moderator Role!"
-      });
-    });
-  });
-};
-
-const isModeratorOrAdmin = (req, res, next) => {
-  User.findByPk(req.userId).then(user => {
-    user.getRoles().then(roles => {
-      for (let i = 0; i < roles.length; i++) {
-        if (roles[i].name === "moderator") {
-          next();
-          return;
-        }
-
-        if (roles[i].name === "admin") {
-          next();
-          return;
-        }
-      }
-
-      res.status(httpResponseCode.HTTP_RESPONSE_FORBIDDEN).send({
-        message: "Require Moderator or Admin Role!"
-      });
-    });
-  });
-};
-
-const isUserorOrAdmin = (req, res, next) => {
-  User.findByPk(req.userId).then(user => {
-    user.getRoles().then(roles => {
-      for (let i = 0; i < roles.length; i++) {
-        if (roles[i].name === "user") {
-          next();
-          return;
-        }
-
-        if (roles[i].name === "admin") {
-          next();
-          return;
-        }
-      }
-
-      res.status(httpResponseCode.HTTP_RESPONSE_FORBIDDEN).send({
-        message: "Require User or Admin Role!"
-      });
-    });
-  });
-};
-
-const authJwt = {
-  verifyToken: verifyToken,
-  isAdmin: isAdmin,
-  isModerator: isModerator,
-  isModeratorOrAdmin: isModeratorOrAdmin,
-  isUserorOrAdmin: isUserorOrAdmin,
-  isUser: isUser
-};
-module.exports = authJwt;
+module.exports = { verifyToken };

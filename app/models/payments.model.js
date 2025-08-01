@@ -48,15 +48,15 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.INTEGER,
       allowNull: true,
     },
-    created_at: {
+    createdAt: {
       type: Sequelize.DATE,
-      defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
+      allowNull: false,
+      defaultValue: Sequelize.fn('now'),
     },
-    updated_at: {
+    updatedAt: {
       type: Sequelize.DATE,
-      defaultValue: Sequelize.literal(
-        "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-      ),
+      allowNull: false,
+      defaultValue: Sequelize.fn('now'),
     },
   });
 

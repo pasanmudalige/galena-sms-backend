@@ -17,16 +17,16 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: true,
       },
-      created_at: {
-        allowNull: false,
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
-      },
-      updated_at: {
-        allowNull: false,
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
-      },
+      createdAt: {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.fn('now'),
+    },
+    updatedAt: {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.fn('now'),
+    },
     });
   },
 

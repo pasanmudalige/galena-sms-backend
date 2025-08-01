@@ -36,14 +36,16 @@ module.exports = {
         type: Sequelize.ENUM('active', 'inactive', 'completed'),
         defaultValue: 'active'
       },
-      created_at: {
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
-      },
-      updated_at: {
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
-      }
+      createdAt: {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.fn('now'),
+    },
+    updatedAt: {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.fn('now'),
+    },
     });
   },
 

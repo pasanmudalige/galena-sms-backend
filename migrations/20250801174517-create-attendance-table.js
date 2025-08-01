@@ -45,10 +45,16 @@ module.exports = {
       notes: {
         type: Sequelize.TEXT
       },
-      created_at: {
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
-      }
+      createdAt: {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.fn('now'),
+    },
+    updatedAt: {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.fn('now'),
+    },
     });
   },
 

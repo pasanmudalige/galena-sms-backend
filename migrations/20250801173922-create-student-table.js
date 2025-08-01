@@ -1,44 +1,46 @@
-'use strict';
+"use strict";
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('students', {
+    await queryInterface.createTable("students", {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
-        primaryKey: true
+        primaryKey: true,
       },
       student_name: {
         type: Sequelize.STRING(100),
-        allowNull: false
+        allowNull: false,
       },
       phone: {
-        type: Sequelize.STRING(15)
+        type: Sequelize.STRING(15),
       },
       parent_phone: {
-        type: Sequelize.STRING(15)
+        type: Sequelize.STRING(15),
       },
       email: {
-        type: Sequelize.STRING(100)
+        type: Sequelize.STRING(100),
       },
       address: {
-        type: Sequelize.TEXT
+        type: Sequelize.TEXT,
       },
       status: {
-        type: Sequelize.ENUM('active', 'inactive'),
-        defaultValue: 'active'
+        type: Sequelize.ENUM("active", "inactive"),
+        defaultValue: "active",
       },
-      created_at: {
+      createdAt: {
         type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+        allowNull: false,
+        defaultValue: Sequelize.fn("now"),
       },
-      updated_at: {
+      updatedAt: {
         type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
-      }
+        allowNull: false,
+        defaultValue: Sequelize.fn("now"),
+      },
     });
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('students');
-  }
+    await queryInterface.dropTable("students");
+  },
 };
