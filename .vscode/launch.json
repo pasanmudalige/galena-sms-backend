@@ -1,0 +1,20 @@
+{
+
+    "version": "0.2.0",
+    // vscode debug configurations for Node.js app 
+    "configurations": [
+        {
+          "type": "node",
+          "request": "launch",
+          "name": "Debug Node.js",
+          "program": "${workspaceFolder}/server.js",
+          "args": [],
+          "runtimeArgs": ["--inspect"],
+          "env": {
+            "NODE_ENV": "local"
+          },
+          "console": "integratedTerminal",
+          "internalConsoleOptions": "neverOpen"
+        }
+      ]
+}
