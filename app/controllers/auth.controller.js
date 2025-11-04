@@ -78,6 +78,9 @@ exports.login = async (req, res) => {
         code: httpResponseCode.HTTP_RESPONSE_OK,
         message: "User Verication Succeed.",
         accessToken: jwtToken,
+        user,
+        email
+
       });
     } else {
       return res.status(httpResponseCode.HTTP_RESPONSE_OK).send({
@@ -382,4 +385,33 @@ exports.defaultmeth = async (req, res) => {
     code: httpResponseCode.HTTP_RESPONSE_OK,
     message: "Signout Succcess.",
   });
+};
+
+exports.getUserData = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(httpResponseCode.HTTP_RESPONSE_UNAUTHORIZED).send({
+        code: httpResponseCode.HTTP_RESPONSE_UNAUTHORIZED,
+        message: "Unauthorized",
+      });
+    }
+    return res.status(httpResponseCode.HTTP_RESPONSE_OK).send({
+      code: httpResponseCode.HTTP_RESPONSE_OK,
+      message: "User data fetched successfully",
+      data: {
+        id: user.id,
+        email: user.email,
+        fullname: user.fullname,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    return res.status(httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR).send({
+      code: httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR,
+      message: "Failed to fetch user data",
+      error: error?.message || error,
+    });
+  }
 };
