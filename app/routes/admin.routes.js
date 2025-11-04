@@ -18,6 +18,8 @@ router.delete("/students/:id", [authJwt.verifyToken], studentController.remove);
 
 // Classes
 router.get("/classes", [authJwt.verifyToken], classesController.list);
+router.post("/classes", [authJwt.verifyToken], classesController.create);
+router.put("/classes/:id", [authJwt.verifyToken], classesController.update);
 router.delete("/classes/:id", [authJwt.verifyToken], classesController.remove);
 
 module.exports = router;

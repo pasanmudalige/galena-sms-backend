@@ -15,6 +15,10 @@ module.exports = (sequelize, Sequelize) => {
       allowNull: true,
       comment: "External student ID",
     },
+    school: {
+      type: Sequelize.STRING(200),
+      allowNull: true,
+    },
     phone: {
       type: Sequelize.STRING(15),
     },

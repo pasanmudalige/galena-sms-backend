@@ -6,7 +6,7 @@ exports.list = async (req, res) => {
     const { Student } = db;
     const students = await Student.findAll({
       order: [["createdAt", "DESC"]],
-      attributes: ["id","student_id", "student_name", "phone", "parent_phone", "email", "address", "status", "createdAt"],
+      attributes: ["id","student_id", "student_name", "school", "phone", "parent_phone", "email", "address", "status", "createdAt"],
     });
     return res.status(httpResponseCode.HTTP_RESPONSE_OK).send({
       code: httpResponseCode.HTTP_RESPONSE_OK,
@@ -25,7 +25,7 @@ exports.list = async (req, res) => {
 exports.create = async (req, res) => {
   try {
     const { Student } = db;
-    const { student_name, student_id, phone, parent_phone, email, address } = req.body;
+    const { student_name, student_id, school, phone, parent_phone, email, address } = req.body;
 
     if (!student_name || !phone) {
       return res.status(httpResponseCode.HTTP_RESPONSE_BAD_REQUEST).send({
@@ -37,6 +37,7 @@ exports.create = async (req, res) => {
     const created = await Student.create({
       student_name,
       student_id: student_id || null,
+      school: school || null,
       phone,
       parent_phone: parent_phone || null,
       email: email || null,
@@ -62,7 +63,7 @@ exports.update = async (req, res) => {
   try {
     const { Student } = db;
     const id = req.params.id;
-    const { student_name, student_id, phone, parent_phone, email, address, status } = req.body;
+    const { student_name, student_id, school, phone, parent_phone, email, address, status } = req.body;
 
     const student = await Student.findByPk(id);
     if (!student) {
@@ -82,6 +83,7 @@ exports.update = async (req, res) => {
     await student.update({
       student_name,
       student_id: student_id !== undefined ? student_id : student.student_id,
+      school: school !== undefined ? school : student.school,
       phone,
       parent_phone: parent_phone !== undefined ? parent_phone : student.parent_phone,
       email: email !== undefined ? email : student.email,
