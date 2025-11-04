@@ -1,4 +1,5 @@
 module.exports = (sequelize, Sequelize) => {
+  //this is also known as enrolment table and entrolment id is the primary key of this table
   const StudentClass = sequelize.define("student_classes", {
     id: {
       type: Sequelize.INTEGER,

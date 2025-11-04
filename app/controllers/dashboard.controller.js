@@ -13,7 +13,7 @@ exports.getDashboardData = async (req, res) => {
     const recentStudents = await Student.findAll({
       order: [["createdAt", "DESC"]],
       limit: 5,
-      attributes: ["id", "student_name", "status", "createdAt"],
+      attributes: ["id", "student_id","student_name", "status", "createdAt"],
     });
 
     const recentClasses = await Class.findAll({
