@@ -9,6 +9,12 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.STRING(100),
       allowNull: false,
     },
+    student_id: {
+      type: Sequelize.STRING(50),
+      unique: true,
+      allowNull: true,
+      comment: "External student ID",
+    },
     phone: {
       type: Sequelize.STRING(15),
     },

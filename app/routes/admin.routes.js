@@ -12,6 +12,8 @@ router.get("/auth/get-user-data",[authJwt.verifyToken], authController.getUserDa
 
 // Students
 router.get("/students", [authJwt.verifyToken], studentController.list);
+router.post("/students", [authJwt.verifyToken], studentController.create);
+router.put("/students/:id", [authJwt.verifyToken], studentController.update);
 router.delete("/students/:id", [authJwt.verifyToken], studentController.remove);
 
 // Classes
