@@ -64,7 +64,7 @@ exports.login = async (req, res) => {
     if (user) {
       const isPasswordValid = bcrypt.compareSync(req.body.password, user.password);
       if (!isPasswordValid) {
-        return res.status(httpResponseCode.HTTP_RESPONSE_NOT_FOUND).send({
+        return res.status(httpResponseCode.HTTP_RESPONSE_OK).send({
           code: 404,
           message: "Incorrect password. Please try again.",
         });
@@ -80,7 +80,7 @@ exports.login = async (req, res) => {
         accessToken: jwtToken,
       });
     } else {
-      return res.status(httpResponseCode.HTTP_RESPONSE_NOT_FOUND).send({
+      return res.status(httpResponseCode.HTTP_RESPONSE_OK).send({
         code: 404,
         message: "Active User Not Found.",
       });

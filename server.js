@@ -20,19 +20,17 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-const envVariables = config();
-
-// Now you can access environment variables using process.env
-console.log(`Environment :`, process.env.TEST);
-
-console.log(`ADMIN_FRONTEND_URL :`, process.env.ADMIN_FRONTEND_URL);
-
 const corsOptions = {
-  origin: [process.env.ADMIN_FRONTEND_URL] 
+  origin: [process.env.ADMIN_FRONTEND_URL],
+  credentials: true, 
 };
 
 
 app.use(cors(corsOptions));
+// app.use(cors({
+//   origin: 'http://localhost:9000', // or use '*' for all origins (not recommended for production)
+//   credentials: true, // if using cookies or HTTP auth
+// }))
 
 // parse requests of content-type - application/json
 app.use(express.json({ limit: '100mb' }));
