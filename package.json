@@ -48,6 +48,7 @@
     "nodemailer-express-handlebars": "^6.1.0",
     "passport": "^0.6.0",
     "passport-google-oauth20": "^2.0.0",
+    "qrcode": "^1.5.4",
     "sequelize": "^6.32.1",
     "user-agents": "^1.0.1412",
     "validator": "^13.9.0"

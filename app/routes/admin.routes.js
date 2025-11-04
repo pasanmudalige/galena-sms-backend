@@ -4,6 +4,8 @@ const authController = require("../controllers/auth.controller");
 const dashboardController = require("../controllers/dashboard.controller");
 const studentController = require("../controllers/student.controller");
 const classesController = require("../controllers/classes.controller");
+const enrollmentController = require("../controllers/enrollment.controller");
+const attendanceController = require("../controllers/attendance.controller");
 const authJwt = require("../middleware/authJwt");
 
 router.post("/auth/login", authController.login);
@@ -21,5 +23,19 @@ router.get("/classes", [authJwt.verifyToken], classesController.list);
 router.post("/classes", [authJwt.verifyToken], classesController.create);
 router.put("/classes/:id", [authJwt.verifyToken], classesController.update);
 router.delete("/classes/:id", [authJwt.verifyToken], classesController.remove);
+
+// Enrollments
+router.get("/enrollments", [authJwt.verifyToken], enrollmentController.list);
+router.post("/enrollments", [authJwt.verifyToken], enrollmentController.create);
+router.get("/enrollments/:id", [authJwt.verifyToken], enrollmentController.getById);
+router.get("/enrollments/qr/:qr_code", enrollmentController.getByQRCode); // Public for QR scan
+router.put("/enrollments/:id", [authJwt.verifyToken], enrollmentController.update);
+router.delete("/enrollments/:id", [authJwt.verifyToken], enrollmentController.remove);
+
+// Attendance
+router.get("/attendance", [authJwt.verifyToken], attendanceController.list);
+router.post("/attendance/manual", [authJwt.verifyToken], attendanceController.markManual);
+router.post("/attendance/qr-scan", attendanceController.markQRScan); // Public for QR scan
+router.get("/attendance/:id", [authJwt.verifyToken], attendanceController.getById);
 
 module.exports = router;

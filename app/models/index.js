@@ -27,6 +27,7 @@ db.User = require("./user.model.js")(sequelize, Sequelize);
 db.Student = require("./student.model.js")(sequelize, Sequelize);
 db.Class = require("./classes.model.js")(sequelize, Sequelize);
 db.StudentClass = require("./student-classes.model.js")(sequelize, Sequelize);
+db.Attendance = require("./attendance.model.js")(sequelize, Sequelize);
 
 // Associations
 db.Student.belongsToMany(db.Class, {
@@ -44,4 +45,9 @@ db.StudentClass.belongsTo(db.Student, { foreignKey: 'student_id' });
 db.StudentClass.belongsTo(db.Class, { foreignKey: 'class_id' });
 db.Student.hasMany(db.StudentClass, { foreignKey: 'student_id' });
 db.Class.hasMany(db.StudentClass, { foreignKey: 'class_id' });
+
+// Attendance associations
+db.Attendance.belongsTo(db.StudentClass, { foreignKey: 'enrollment_id', as: 'enrollment' });
+db.StudentClass.hasMany(db.Attendance, { foreignKey: 'enrollment_id', as: 'attendances' });
+
 module.exports = db;
