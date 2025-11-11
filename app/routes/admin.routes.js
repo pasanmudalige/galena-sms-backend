@@ -6,11 +6,15 @@ const studentController = require("../controllers/student.controller");
 const classesController = require("../controllers/classes.controller");
 const enrollmentController = require("../controllers/enrollment.controller");
 const attendanceController = require("../controllers/attendance.controller");
+const constantsController = require("../controllers/constants.controller");
 const authJwt = require("../middleware/authJwt");
 
 router.post("/auth/login", authController.login);
 router.get("/auth/getDashboardData",[authJwt.verifyToken], dashboardController.getDashboardData);
 router.get("/auth/get-user-data",[authJwt.verifyToken], authController.getUserData);
+
+// Constants
+router.get("/constants/al-years", [authJwt.verifyToken], constantsController.getALYears);
 
 // Students
 router.get("/students", [authJwt.verifyToken], studentController.list);

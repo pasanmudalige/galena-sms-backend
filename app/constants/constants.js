@@ -18,5 +18,7 @@ module.exports = Object.freeze({
         NOT_FOUND:"Not found",
         FAILED: "Failed",
         DOWNLOAD_SUCCESS: "Downloaded Successfully"
-    }
+    },
+
+    AL_YEARS: ["2026", "2027", "2028", "2029", "2030"]
 });

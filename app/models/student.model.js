@@ -31,6 +31,16 @@ module.exports = (sequelize, Sequelize) => {
     address: {
       type: Sequelize.TEXT,
     },
+    year_of_al: {
+      type: Sequelize.STRING(20),
+      allowNull: true,
+      comment: "Year of Advanced Level",
+    },
+    hear_about_us: {
+      type: Sequelize.TEXT,
+      allowNull: true,
+      comment: "Where did you hear about us (JSON array of selected options)",
+    },
     status: {
       type: Sequelize.ENUM("active", "inactive"),
       defaultValue: "active",
