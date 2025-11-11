@@ -50,4 +50,8 @@ db.Class.hasMany(db.StudentClass, { foreignKey: 'class_id' });
 db.Attendance.belongsTo(db.StudentClass, { foreignKey: 'enrollment_id', as: 'enrollment' });
 db.StudentClass.hasMany(db.Attendance, { foreignKey: 'enrollment_id', as: 'attendances' });
 
+// Student-User association
+db.Student.belongsTo(db.User, { foreignKey: 'user_id', as: 'user' });
+db.User.hasOne(db.Student, { foreignKey: 'user_id', as: 'student' });
+
 module.exports = db;

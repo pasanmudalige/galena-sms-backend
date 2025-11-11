@@ -45,6 +45,16 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.ENUM("active", "inactive"),
       defaultValue: "active",
     },
+    pending_access: {
+      type: Sequelize.BOOLEAN,
+      defaultValue: false,
+      comment: "True if student registered but access not yet granted",
+    },
+    user_id: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+      comment: "Foreign key to users table for login credentials",
+    },
     createdAt: {
       type: Sequelize.DATE,
       allowNull: false,

@@ -6,7 +6,15 @@ exports.list = async (req, res) => {
     const { Student } = db;
     const students = await Student.findAll({
       order: [["createdAt", "DESC"]],
-      attributes: ["id","student_id", "student_name", "school", "phone", "parent_phone", "email", "address", "year_of_al", "hear_about_us", "status", "createdAt"],
+      attributes: ["id","student_id", "student_name", "school", "phone", "parent_phone", "email", "address", "year_of_al", "hear_about_us", "status", "pending_access", "user_id", "createdAt"],
+      include: [
+        {
+          model: db.User,
+          as: "user",
+          attributes: ["id", "email", "is_active"],
+          required: false,
+        },
+      ],
     });
     return res.status(httpResponseCode.HTTP_RESPONSE_OK).send({
       code: httpResponseCode.HTTP_RESPONSE_OK,

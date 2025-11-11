@@ -3,6 +3,7 @@ const router = express.Router();
 const authController = require("../controllers/auth.controller");
 const dashboardController = require("../controllers/dashboard.controller");
 const studentController = require("../controllers/student.controller");
+const studentRegistrationController = require("../controllers/student-registration.controller");
 const classesController = require("../controllers/classes.controller");
 const enrollmentController = require("../controllers/enrollment.controller");
 const attendanceController = require("../controllers/attendance.controller");
@@ -21,6 +22,8 @@ router.get("/students", [authJwt.verifyToken], studentController.list);
 router.post("/students", [authJwt.verifyToken], studentController.create);
 router.put("/students/:id", [authJwt.verifyToken], studentController.update);
 router.delete("/students/:id", [authJwt.verifyToken], studentController.remove);
+router.post("/students/:id/grant-access", [authJwt.verifyToken], studentRegistrationController.grantAccess);
+router.post("/students/:id/reset-password", [authJwt.verifyToken], studentRegistrationController.resetPassword);
 
 // Classes
 router.get("/classes", [authJwt.verifyToken], classesController.list);
