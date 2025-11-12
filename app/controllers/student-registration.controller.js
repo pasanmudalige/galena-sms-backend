@@ -2,6 +2,7 @@ const db = require("../models");
 const { httpResponseCode } = require("../constants/httpResponseCode");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
+const { generateStudentId } = require("../utils/student-id-generator");
 
 // Generate random password
 function generateRandomPassword(length = 8) {
@@ -58,11 +59,7 @@ exports.register = async (req, res) => {
     // Generate student_id if not provided
     let finalStudentId = student_id;
     if (!finalStudentId) {
-      const d = new Date();
-      const pad = (n) => n.toString().padStart(2, "0");
-      const ymd = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
-      const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
-      finalStudentId = `STU-${ymd}-${rand}`;
+      finalStudentId = await generateStudentId(year_of_al);
     }
 
     const student = await Student.create({

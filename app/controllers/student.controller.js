@@ -1,5 +1,6 @@
 const db = require("../models");
 const { httpResponseCode } = require("../constants/httpResponseCode");
+const { generateStudentId } = require("../utils/student-id-generator");
 
 exports.list = async (req, res) => {
   try {
@@ -52,9 +53,15 @@ exports.create = async (req, res) => {
       }
     }
 
+    // Generate student_id if not provided
+    let finalStudentId = student_id;
+    if (!finalStudentId) {
+      finalStudentId = await generateStudentId(year_of_al);
+    }
+
     const created = await Student.create({
       student_name,
-      student_id: student_id || null,
+      student_id: finalStudentId,
       school: school || null,
       phone,
       parent_phone: parent_phone || null,
@@ -141,21 +148,56 @@ exports.update = async (req, res) => {
 };
 
 exports.remove = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
   try {
-    const { Student } = db;
+    const { Student, StudentClass, Attendance } = db;
     const id = req.params.id;
-    const deleted = await Student.destroy({ where: { id } });
-    if (!deleted) {
+
+    // Check if student exists
+    const student = await Student.findByPk(id);
+    if (!student) {
+      await transaction.rollback();
       return res.status(httpResponseCode.HTTP_RESPONSE_NOT_FOUND).send({
         code: httpResponseCode.HTTP_RESPONSE_NOT_FOUND,
         message: "Student not found",
       });
     }
+
+    // Find all enrollments for this student
+    const enrollments = await StudentClass.findAll({
+      where: { student_id: id },
+      transaction,
+    });
+
+    // Delete all attendance records for these enrollments
+    if (enrollments.length > 0) {
+      const enrollmentIds = enrollments.map((e) => e.id);
+      await Attendance.destroy({
+        where: { enrollment_id: enrollmentIds },
+        transaction,
+      });
+    }
+
+    // Delete all enrollments for this student
+    await StudentClass.destroy({
+      where: { student_id: id },
+      transaction,
+    });
+
+    // Delete the student
+    await Student.destroy({
+      where: { id },
+      transaction,
+    });
+
+    await transaction.commit();
+
     return res.status(httpResponseCode.HTTP_RESPONSE_OK).send({
       code: httpResponseCode.HTTP_RESPONSE_OK,
-      message: "Student deleted successfully",
+      message: "Student and all related records deleted successfully",
     });
   } catch (error) {
+    await transaction.rollback();
     return res.status(httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR).send({
       code: httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR,
       message: "Failed to delete student",

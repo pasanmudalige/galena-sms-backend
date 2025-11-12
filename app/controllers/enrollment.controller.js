@@ -269,23 +269,41 @@ exports.update = async (req, res) => {
 
 // Delete enrollment
 exports.remove = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
   try {
-    const { StudentClass } = db;
+    const { StudentClass, Attendance } = db;
     const { id } = req.params;
 
-    const deleted = await StudentClass.destroy({ where: { id } });
-    if (!deleted) {
+    // Check if enrollment exists
+    const enrollment = await StudentClass.findByPk(id);
+    if (!enrollment) {
+      await transaction.rollback();
       return res.status(httpResponseCode.HTTP_RESPONSE_NOT_FOUND).send({
         code: httpResponseCode.HTTP_RESPONSE_NOT_FOUND,
         message: "Enrollment not found",
       });
     }
 
+    // Delete all attendance records for this enrollment
+    await Attendance.destroy({
+      where: { enrollment_id: id },
+      transaction,
+    });
+
+    // Delete the enrollment
+    await StudentClass.destroy({
+      where: { id },
+      transaction,
+    });
+
+    await transaction.commit();
+
     return res.status(httpResponseCode.HTTP_RESPONSE_OK).send({
       code: httpResponseCode.HTTP_RESPONSE_OK,
-      message: "Enrollment deleted successfully",
+      message: "Enrollment and all related records deleted successfully",
     });
   } catch (error) {
+    await transaction.rollback();
     return res.status(httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR).send({
       code: httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR,
       message: "Failed to delete enrollment",
