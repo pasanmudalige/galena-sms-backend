@@ -70,6 +70,7 @@ exports.create = async (req, res) => {
       year_of_al: year_of_al || null,
       hear_about_us: hearAboutUsValue,
       status: 'active',
+      pending_access: true, // Mark as pending access, admin can grant access later
     });
 
     return res.status(httpResponseCode.HTTP_RESPONSE_CREATED).send({

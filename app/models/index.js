@@ -28,6 +28,9 @@ db.Student = require("./student.model.js")(sequelize, Sequelize);
 db.Class = require("./classes.model.js")(sequelize, Sequelize);
 db.StudentClass = require("./student-classes.model.js")(sequelize, Sequelize);
 db.Attendance = require("./attendance.model.js")(sequelize, Sequelize);
+db.Document = require("./document.model.js")(sequelize, Sequelize);
+db.DocumentClass = require("./document-class.model.js")(sequelize, Sequelize);
+db.DocumentView = require("./document-view.model.js")(sequelize, Sequelize);
 
 // Associations
 db.Student.belongsToMany(db.Class, {
@@ -53,5 +56,30 @@ db.StudentClass.hasMany(db.Attendance, { foreignKey: 'enrollment_id', as: 'atten
 // Student-User association
 db.Student.belongsTo(db.User, { foreignKey: 'user_id', as: 'user' });
 db.User.hasOne(db.Student, { foreignKey: 'user_id', as: 'student' });
+
+// Document associations
+db.Document.belongsToMany(db.Class, {
+  through: db.DocumentClass,
+  foreignKey: 'document_id',
+  otherKey: 'class_id',
+  as: 'classes'
+});
+db.Class.belongsToMany(db.Document, {
+  through: db.DocumentClass,
+  foreignKey: 'class_id',
+  otherKey: 'document_id',
+  as: 'documents'
+});
+
+db.DocumentClass.belongsTo(db.Document, { foreignKey: 'document_id', as: 'document' });
+db.DocumentClass.belongsTo(db.Class, { foreignKey: 'class_id', as: 'class' });
+db.Document.hasMany(db.DocumentClass, { foreignKey: 'document_id', as: 'documentClasses' });
+db.Class.hasMany(db.DocumentClass, { foreignKey: 'class_id', as: 'documentClasses' });
+
+// DocumentView associations
+db.DocumentView.belongsTo(db.Document, { foreignKey: 'document_id', as: 'document' });
+db.DocumentView.belongsTo(db.Student, { foreignKey: 'student_id', as: 'student' });
+db.Document.hasMany(db.DocumentView, { foreignKey: 'document_id', as: 'views' });
+db.Student.hasMany(db.DocumentView, { foreignKey: 'student_id', as: 'documentViews' });
 
 module.exports = db;

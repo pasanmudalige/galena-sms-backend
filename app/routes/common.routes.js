@@ -3,6 +3,7 @@ const router = express.Router();
 const authJwt = require("../middleware/authJwt");
 const healthController = require("../controllers/health.controller");
 const studentRegistrationController = require("../controllers/student-registration.controller");
+const documentController = require("../controllers/document.controller");
 
 /**
  * Main Health check function (Without JWT Verification)
@@ -26,5 +27,11 @@ router.post("/student/register", studentRegistrationController.register);
  */
 const constantsController = require("../controllers/constants.controller");
 router.get("/constants/al-years", constantsController.getALYears);
+
+/**
+ * Student document routes (auth required)
+ */
+router.get("/student/documents", [authJwt.verifyToken], documentController.listForStudent);
+router.get("/student/documents/:id/view", [authJwt.verifyToken], documentController.view);
 
 module.exports = router;

@@ -82,6 +82,10 @@ app.get("/", (req, res) => {
   res.json({ message: "Welcome to Node JS application." });
 });
 
+// Serve static files (uploads)
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // routes
 const routes = require("./app/routes");
 app.use(routes);

@@ -8,6 +8,7 @@ const classesController = require("../controllers/classes.controller");
 const enrollmentController = require("../controllers/enrollment.controller");
 const attendanceController = require("../controllers/attendance.controller");
 const constantsController = require("../controllers/constants.controller");
+const documentController = require("../controllers/document.controller");
 const authJwt = require("../middleware/authJwt");
 
 router.post("/auth/login", authController.login);
@@ -44,5 +45,12 @@ router.get("/attendance", [authJwt.verifyToken], attendanceController.list);
 router.post("/attendance/manual", [authJwt.verifyToken], attendanceController.markManual);
 router.post("/attendance/qr-scan", attendanceController.markQRScan); // Public for QR scan
 router.get("/attendance/:id", [authJwt.verifyToken], attendanceController.getById);
+
+// Documents
+router.get("/documents", [authJwt.verifyToken], documentController.list);
+router.post("/documents", [authJwt.verifyToken], documentController.upload);
+router.get("/documents/:id", [authJwt.verifyToken], documentController.getById);
+router.put("/documents/:id", [authJwt.verifyToken], documentController.update);
+router.delete("/documents/:id", [authJwt.verifyToken], documentController.remove);
 
 module.exports = router;
