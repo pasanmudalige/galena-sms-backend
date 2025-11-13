@@ -494,6 +494,50 @@ exports.view = async (req, res) => {
   }
 };
 
+// View document (admin) - unlimited access, no view tracking
+exports.viewAsAdmin = async (req, res) => {
+  try {
+    const { Document } = db;
+    const { id } = req.params;
+
+    // Get document
+    const document = await Document.findByPk(id);
+    if (!document) {
+      return res.status(httpResponseCode.HTTP_RESPONSE_NOT_FOUND).send({
+        code: httpResponseCode.HTTP_RESPONSE_NOT_FOUND,
+        message: "Document not found",
+      });
+    }
+
+    // Get file path and send file
+    const filePath = path.join(__dirname, "../..", document.file_path);
+    if (!fs.existsSync(filePath)) {
+      return res.status(httpResponseCode.HTTP_RESPONSE_NOT_FOUND).send({
+        code: httpResponseCode.HTTP_RESPONSE_NOT_FOUND,
+        message: "Document file not found",
+      });
+    }
+
+    // Set headers to prevent download and sharing
+    res.setHeader("Content-Type", document.file_type === "pdf" ? "application/pdf" : `image/${document.file_type}`);
+    res.setHeader("Content-Disposition", "inline; filename=" + encodeURIComponent(document.document_name));
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+
+    // Send file
+    return res.sendFile(path.resolve(filePath));
+  } catch (error) {
+    return res.status(httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR).send({
+      code: httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR,
+      message: "Failed to view document",
+      error: error?.message || error,
+    });
+  }
+};
+
 // List documents for student (only documents for enrolled classes)
 exports.listForStudent = async (req, res) => {
   try {

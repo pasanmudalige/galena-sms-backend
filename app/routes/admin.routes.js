@@ -50,6 +50,7 @@ router.get("/attendance/:id", [authJwt.verifyToken], attendanceController.getByI
 router.get("/documents", [authJwt.verifyToken], documentController.list);
 router.post("/documents", [authJwt.verifyToken], documentController.upload);
 router.get("/documents/:id", [authJwt.verifyToken], documentController.getById);
+router.get("/documents/:id/view", [authJwt.verifyToken], documentController.viewAsAdmin);
 router.put("/documents/:id", [authJwt.verifyToken], documentController.update);
 router.delete("/documents/:id", [authJwt.verifyToken], documentController.remove);
 
