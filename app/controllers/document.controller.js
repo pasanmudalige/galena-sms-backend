@@ -30,6 +30,7 @@ exports.upload = async (req, res) => {
         try {
           class_ids = JSON.parse(class_ids);
         } catch (e) {
+          console.log(e)
           // If parsing fails, check if it's a single value or comma-separated
           if (class_ids.includes(',')) {
             class_ids = class_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));

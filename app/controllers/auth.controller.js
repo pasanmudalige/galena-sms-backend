@@ -3,6 +3,7 @@ const { httpResponseCode } = require("../constants/httpResponseCode");
 const config = require("../config/auth.config");
 const User = db.User;
 const TempUser = db.tempuser;
+const Student = db.Student;
 const constants = require("../constants/constants");
 const { sendEmail } = require("../util/email.sender.util");
 const crypto = require("crypto");
@@ -69,6 +70,29 @@ exports.login = async (req, res) => {
           message: "Incorrect password. Please try again.",
         });
       }
+
+      // Check if user is linked to a student and if student is active
+      // Try to find student by user_id first, then by email as fallback
+      let student = await Student.findOne({
+        where: { user_id: user.id },
+      });
+
+      // If not found by user_id, try to find by email
+      if (!student) {
+        student = await Student.findOne({
+          where: { email: email },
+        });
+      }
+
+      // If student exists and is inactive, block login
+      if (student && student.status && student.status.toLowerCase() === 'inactive') {
+        return res.status(httpResponseCode.HTTP_RESPONSE_FORBIDDEN).send({
+          code: httpResponseCode.HTTP_RESPONSE_FORBIDDEN,
+          message: "You are blocked. Please contact the support center via WhatsApp for assistance.",
+          blocked: true,
+        });
+      }
+
       const jwtToken = await generateJWTToken(user.id);
       const data = {
         accessToken: jwtToken,
