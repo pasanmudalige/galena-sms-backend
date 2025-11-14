@@ -112,6 +112,41 @@ const validateScheduleAndTime = async (classId, scanDateTime) => {
   };
 };
 
+// Helper function to check payment status for current month and class
+// Simple check: payment exists and payment_status === 'paid' = paid, otherwise = pending
+const checkPaymentStatus = async (enrollmentId, scanDateTime) => {
+  const { Payment } = db;
+  
+  // Get current month and year in YYYY-MM format
+  const scanDate = new Date(scanDateTime);
+  const currentMonth = scanDate.getFullYear() + '-' + String(scanDate.getMonth() + 1).padStart(2, '0');
+  
+  // Check for payment record for this enrollment and current month
+  const payment = await Payment.findOne({
+    where: {
+      enrollment_id: enrollmentId,
+      month_year: currentMonth,
+    },
+    order: [['createdAt', 'DESC']], // Get the most recent payment if multiple exist
+  });
+  
+  // If payment exists and is paid, mark as present
+  if (payment && payment.payment_status === 'paid') {
+    return {
+      paid: true,
+      status: 'present',
+      payment: payment,
+    };
+  }
+  
+  // No payment or payment not paid = payment_pending
+  return {
+    paid: false,
+    status: 'payment_pending',
+    payment: payment || null,
+  };
+};
+
 // Mark attendance manually
 exports.markManual = async (req, res) => {
   try {
@@ -142,6 +177,38 @@ exports.markManual = async (req, res) => {
       });
     }
 
+    // Load class information for schedule validation
+    const enrollmentWithClass = await StudentClass.findByPk(enrollment.id, {
+      include: [
+        { model: db.Class, attributes: ["id", "class_name", "class_code"] },
+      ],
+    });
+
+    if (!enrollmentWithClass || !enrollmentWithClass.class) {
+      return res.status(httpResponseCode.HTTP_RESPONSE_NOT_FOUND).send({
+        code: httpResponseCode.HTTP_RESPONSE_NOT_FOUND,
+        message: "Class information not found for this enrollment",
+      });
+    }
+
+    // Validate schedule and time window (unless override is allowed)
+    if (!override_allowed) {
+      const scheduleValidation = await validateScheduleAndTime(
+        enrollmentWithClass.class.id,
+        attendance_datetime
+      );
+
+      if (!scheduleValidation.valid) {
+        return res.status(httpResponseCode.HTTP_RESPONSE_BAD_REQUEST).send({
+          code: httpResponseCode.HTTP_RESPONSE_BAD_REQUEST,
+          message: scheduleValidation.message,
+          error: scheduleValidation.error,
+          scheduleType: scheduleValidation.scheduleType,
+          startTime: scheduleValidation.startTime,
+        });
+      }
+    }
+
     // Check if attendance already marked for today
     const today = new Date(attendance_datetime);
     today.setHours(0, 0, 0, 0);
@@ -166,6 +233,16 @@ exports.markManual = async (req, res) => {
       });
     }
 
+    // Check payment status for current month and class (unless override is allowed)
+    let attendanceStatus = "present";
+    if (!override_allowed) {
+      const paymentStatus = await checkPaymentStatus(enrollment.id, attendance_datetime);
+      attendanceStatus = paymentStatus.status; // 'present' or 'payment_pending'
+    } else {
+      // If override is allowed, use manual_override status
+      attendanceStatus = "manual_override";
+    }
+
     // Get IP address
     const ipAddress = req.ip || req.connection.remoteAddress || null;
 
@@ -173,7 +250,7 @@ exports.markManual = async (req, res) => {
     const attendance = await Attendance.create({
       enrollment_id,
       attendance_datetime,
-      attendance_status: override_allowed ? "manual_override" : "present",
+      attendance_status: attendanceStatus,
       entry_method: "manual",
       override_allowed: override_allowed || false,
       override_reason: override_reason || null,
@@ -297,9 +374,9 @@ exports.markQRScan = async (req, res) => {
       });
     }
 
-    // TODO: Check payment status - if payment is overdue, mark as blocked_unpaid
-    // For now, we'll mark as present
-    const attendanceStatus = "present"; // Can be changed based on payment check
+    // Check payment status for current month and class
+    const paymentStatus = await checkPaymentStatus(enrollment.id, attendance_datetime);
+    const attendanceStatus = paymentStatus.status; // 'present' or 'payment_pending'
 
     // Get IP address
     const ipAddress = req.ip || req.connection.remoteAddress || null;

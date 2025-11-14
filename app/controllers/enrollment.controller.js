@@ -125,9 +125,10 @@ exports.list = async (req, res) => {
     const { StudentClass, Student, Class } = db;
     const enrollments = await StudentClass.findAll({
       order: [["createdAt", "DESC"]],
+      // Include all fields from StudentClass (card_type and custom_fee are included by default)
       include: [
         { model: Student, attributes: ["id", "student_name", "student_id", "school", "phone"] },
-        { model: Class, attributes: ["id", "class_name", "class_code", "teacher_name"] },
+        { model: Class, attributes: ["id", "class_name", "class_code", "teacher_name", "class_fee"] },
       ],
     });
 

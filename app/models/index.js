@@ -34,6 +34,7 @@ db.DocumentView = require("./document-view.model.js")(sequelize, Sequelize);
 db.ClassSchedule = require("./class-schedule.model.js")(sequelize, Sequelize);
 db.ExtraClass = require("./extra-class.model.js")(sequelize, Sequelize);
 db.ExtraClassClass = require("./extra-class-class.model.js")(sequelize, Sequelize);
+db.Payment = require("./payments.model.js")(sequelize, Sequelize);
 
 // Associations
 db.Student.belongsToMany(db.Class, {
@@ -107,5 +108,9 @@ db.ExtraClassClass.belongsTo(db.ExtraClass, { foreignKey: 'extra_class_id', as: 
 db.ExtraClassClass.belongsTo(db.Class, { foreignKey: 'class_id', as: 'class' });
 db.ExtraClass.hasMany(db.ExtraClassClass, { foreignKey: 'extra_class_id', as: 'extraClassClasses' });
 db.Class.hasMany(db.ExtraClassClass, { foreignKey: 'class_id', as: 'extraClassClasses' });
+
+// Payment associations
+db.Payment.belongsTo(db.StudentClass, { foreignKey: 'enrollment_id', as: 'enrollment' });
+db.StudentClass.hasMany(db.Payment, { foreignKey: 'enrollment_id', as: 'payments' });
 
 module.exports = db;

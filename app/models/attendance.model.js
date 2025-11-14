@@ -14,7 +14,7 @@ module.exports = (sequelize, Sequelize) => {
       allowNull: false,
     },
     attendance_status: {
-      type: Sequelize.ENUM("present", "blocked_unpaid", "manual_override"),
+      type: Sequelize.ENUM("present", "blocked_unpaid", "manual_override", "payment_pending"),
       defaultValue: "present",
     },
     entry_method: {

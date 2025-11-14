@@ -4,6 +4,7 @@ const authJwt = require("../middleware/authJwt");
 const healthController = require("../controllers/health.controller");
 const studentRegistrationController = require("../controllers/student-registration.controller");
 const documentController = require("../controllers/document.controller");
+const paymentController = require("../controllers/payment.controller");
 
 /**
  * Main Health check function (Without JWT Verification)
@@ -33,5 +34,11 @@ router.get("/constants/al-years", constantsController.getALYears);
  */
 router.get("/student/documents", [authJwt.verifyToken], documentController.listForStudent);
 router.get("/student/documents/:id/view", [authJwt.verifyToken], documentController.view);
+
+/**
+ * Student payment routes (auth required)
+ */
+router.get("/student/payments", [authJwt.verifyToken], paymentController.getStudentPayments);
+router.post("/student/payments/mark-paid", [authJwt.verifyToken], paymentController.markPaymentAsPaid);
 
 module.exports = router;

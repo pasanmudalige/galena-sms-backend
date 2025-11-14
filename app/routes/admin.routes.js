@@ -10,6 +10,7 @@ const attendanceController = require("../controllers/attendance.controller");
 const constantsController = require("../controllers/constants.controller");
 const documentController = require("../controllers/document.controller");
 const scheduleController = require("../controllers/schedule.controller");
+const paymentController = require("../controllers/payment.controller");
 const authJwt = require("../middleware/authJwt");
 
 router.post("/auth/login", authController.login);
@@ -66,5 +67,11 @@ router.get("/schedules/extra", [authJwt.verifyToken], scheduleController.getExtr
 router.post("/schedules/extra", [authJwt.verifyToken], scheduleController.createExtraClass);
 router.put("/schedules/extra/:id", [authJwt.verifyToken], scheduleController.updateExtraClass);
 router.delete("/schedules/extra/:id", [authJwt.verifyToken], scheduleController.deleteExtraClass);
+
+// Payments (Admin)
+router.get("/payments", [authJwt.verifyToken], paymentController.getAllPayments);
+router.post("/payments", [authJwt.verifyToken], paymentController.createPayment);
+router.put("/payments/:id", [authJwt.verifyToken], paymentController.updatePayment);
+router.delete("/payments/:id", [authJwt.verifyToken], paymentController.deletePayment);
 
 module.exports = router;
