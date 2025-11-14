@@ -9,6 +9,7 @@ const enrollmentController = require("../controllers/enrollment.controller");
 const attendanceController = require("../controllers/attendance.controller");
 const constantsController = require("../controllers/constants.controller");
 const documentController = require("../controllers/document.controller");
+const scheduleController = require("../controllers/schedule.controller");
 const authJwt = require("../middleware/authJwt");
 
 router.post("/auth/login", authController.login);
@@ -53,5 +54,17 @@ router.get("/documents/:id", [authJwt.verifyToken], documentController.getById);
 router.get("/documents/:id/view", [authJwt.verifyToken], documentController.viewAsAdmin);
 router.put("/documents/:id", [authJwt.verifyToken], documentController.update);
 router.delete("/documents/:id", [authJwt.verifyToken], documentController.remove);
+
+// Class Schedules
+router.get("/schedules/default", [authJwt.verifyToken], scheduleController.getDefaultSchedules);
+router.post("/schedules/default", [authJwt.verifyToken], scheduleController.createDefaultSchedule);
+router.put("/schedules/default/:id", [authJwt.verifyToken], scheduleController.updateDefaultSchedule);
+router.delete("/schedules/default/:id", [authJwt.verifyToken], scheduleController.deleteDefaultSchedule);
+
+// Extra Classes
+router.get("/schedules/extra", [authJwt.verifyToken], scheduleController.getExtraClasses);
+router.post("/schedules/extra", [authJwt.verifyToken], scheduleController.createExtraClass);
+router.put("/schedules/extra/:id", [authJwt.verifyToken], scheduleController.updateExtraClass);
+router.delete("/schedules/extra/:id", [authJwt.verifyToken], scheduleController.deleteExtraClass);
 
 module.exports = router;

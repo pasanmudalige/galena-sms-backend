@@ -31,6 +31,9 @@ db.Attendance = require("./attendance.model.js")(sequelize, Sequelize);
 db.Document = require("./document.model.js")(sequelize, Sequelize);
 db.DocumentClass = require("./document-class.model.js")(sequelize, Sequelize);
 db.DocumentView = require("./document-view.model.js")(sequelize, Sequelize);
+db.ClassSchedule = require("./class-schedule.model.js")(sequelize, Sequelize);
+db.ExtraClass = require("./extra-class.model.js")(sequelize, Sequelize);
+db.ExtraClassClass = require("./extra-class-class.model.js")(sequelize, Sequelize);
 
 // Associations
 db.Student.belongsToMany(db.Class, {
@@ -81,5 +84,28 @@ db.DocumentView.belongsTo(db.Document, { foreignKey: 'document_id', as: 'documen
 db.DocumentView.belongsTo(db.Student, { foreignKey: 'student_id', as: 'student' });
 db.Document.hasMany(db.DocumentView, { foreignKey: 'document_id', as: 'views' });
 db.Student.hasMany(db.DocumentView, { foreignKey: 'student_id', as: 'documentViews' });
+
+// ClassSchedule associations
+db.ClassSchedule.belongsTo(db.Class, { foreignKey: 'class_id', as: 'class' });
+db.Class.hasMany(db.ClassSchedule, { foreignKey: 'class_id', as: 'schedules' });
+
+// ExtraClass associations
+db.ExtraClass.belongsToMany(db.Class, {
+  through: db.ExtraClassClass,
+  foreignKey: 'extra_class_id',
+  otherKey: 'class_id',
+  as: 'classes'
+});
+db.Class.belongsToMany(db.ExtraClass, {
+  through: db.ExtraClassClass,
+  foreignKey: 'class_id',
+  otherKey: 'extra_class_id',
+  as: 'extraClasses'
+});
+
+db.ExtraClassClass.belongsTo(db.ExtraClass, { foreignKey: 'extra_class_id', as: 'extraClass' });
+db.ExtraClassClass.belongsTo(db.Class, { foreignKey: 'class_id', as: 'class' });
+db.ExtraClass.hasMany(db.ExtraClassClass, { foreignKey: 'extra_class_id', as: 'extraClassClasses' });
+db.Class.hasMany(db.ExtraClassClass, { foreignKey: 'class_id', as: 'extraClassClasses' });
 
 module.exports = db;

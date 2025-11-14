@@ -2,6 +2,116 @@ const db = require("../models");
 const { httpResponseCode } = require("../constants/httpResponseCode");
 const { Op } = require("sequelize");
 
+// Helper function to validate schedule and time window
+const validateScheduleAndTime = async (classId, scanDateTime) => {
+  const { ClassSchedule, ExtraClass } = db;
+  const scanDate = new Date(scanDateTime);
+  const dayOfWeek = scanDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  const scanTime = scanDate.toTimeString().slice(0, 5); // HH:MM format
+  const dateOnly = scanDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+  // First, check for extra classes on this specific date
+  const extraClasses = await ExtraClass.findAll({
+    where: {
+      session_date: dateOnly,
+      is_active: true,
+    },
+    include: [
+      {
+        model: db.Class,
+        through: db.ExtraClassClass,
+        where: { id: classId },
+        as: 'classes',
+        required: true,
+      },
+    ],
+  });
+
+  if (extraClasses.length > 0) {
+    // Found extra class for this date, validate time window
+    for (const extraClass of extraClasses) {
+      const startTime = extraClass.start_time;
+      const [startHours, startMinutes] = startTime.split(':').map(Number);
+      const [scanHours, scanMinutes] = scanTime.split(':').map(Number);
+
+      // Calculate start time in minutes from midnight
+      const startTimeMinutes = startHours * 60 + startMinutes;
+      const scanTimeMinutes = scanHours * 60 + scanMinutes;
+
+      // Check if scan is within 1 hour before to 1 hour after start time
+      const oneHourBefore = startTimeMinutes - 60;
+      const oneHourAfter = startTimeMinutes + 60;
+
+      if (scanTimeMinutes >= oneHourBefore && scanTimeMinutes <= oneHourAfter) {
+        return {
+          valid: true,
+          scheduleType: 'extra',
+          startTime: startTime,
+          endTime: extraClass.end_time,
+        };
+      }
+    }
+    // Extra class exists but time window doesn't match
+    const firstExtraClass = extraClasses[0];
+    return {
+      valid: false,
+      error: 'TIME_WINDOW',
+      message: `Attendance can only be marked within 1 hour before to 1 hour after the scheduled start time (${firstExtraClass.start_time})`,
+      scheduleType: 'extra',
+      startTime: firstExtraClass.start_time,
+    };
+  }
+
+  // If no extra class, check default weekly schedule
+  const defaultSchedules = await ClassSchedule.findAll({
+    where: {
+      class_id: classId,
+      day_of_week: dayOfWeek,
+      is_active: true,
+    },
+  });
+
+  if (defaultSchedules.length === 0) {
+    return {
+      valid: false,
+      error: 'NO_SCHEDULE',
+      message: 'No scheduled class session found for this day and time',
+    };
+  }
+
+  // Check if scan time is within any of the default schedules' time windows
+  for (const schedule of defaultSchedules) {
+    const startTime = schedule.start_time;
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [scanHours, scanMinutes] = scanTime.split(':').map(Number);
+
+    const startTimeMinutes = startHours * 60 + startMinutes;
+    const scanTimeMinutes = scanHours * 60 + scanMinutes;
+
+    const oneHourBefore = startTimeMinutes - 60;
+    const oneHourAfter = startTimeMinutes + 60;
+
+    if (scanTimeMinutes >= oneHourBefore && scanTimeMinutes <= oneHourAfter) {
+      return {
+        valid: true,
+        scheduleType: 'default',
+        startTime: startTime,
+        endTime: schedule.end_time,
+      };
+    }
+  }
+
+  // Default schedule exists but time window doesn't match
+  const firstSchedule = defaultSchedules[0];
+  return {
+    valid: false,
+    error: 'TIME_WINDOW',
+    message: `Attendance can only be marked within 1 hour before to 1 hour after the scheduled start time (${firstSchedule.start_time})`,
+    scheduleType: 'default',
+    startTime: firstSchedule.start_time,
+  };
+};
+
 // Mark attendance manually
 exports.markManual = async (req, res) => {
   try {
@@ -130,6 +240,36 @@ exports.markQRScan = async (req, res) => {
         code: httpResponseCode.HTTP_RESPONSE_BAD_REQUEST,
         message: "Enrollment is not active",
         attendance_status: "blocked_unpaid",
+      });
+    }
+
+    // Load class information for schedule validation
+    const enrollmentWithClass = await StudentClass.findByPk(enrollment.id, {
+      include: [
+        { model: db.Class, attributes: ["id", "class_name", "class_code"] },
+      ],
+    });
+
+    if (!enrollmentWithClass || !enrollmentWithClass.class) {
+      return res.status(httpResponseCode.HTTP_RESPONSE_NOT_FOUND).send({
+        code: httpResponseCode.HTTP_RESPONSE_NOT_FOUND,
+        message: "Class information not found for this enrollment",
+      });
+    }
+
+    // Validate schedule and time window
+    const scheduleValidation = await validateScheduleAndTime(
+      enrollmentWithClass.class.id,
+      attendance_datetime
+    );
+
+    if (!scheduleValidation.valid) {
+      return res.status(httpResponseCode.HTTP_RESPONSE_BAD_REQUEST).send({
+        code: httpResponseCode.HTTP_RESPONSE_BAD_REQUEST,
+        message: scheduleValidation.message,
+        error: scheduleValidation.error,
+        scheduleType: scheduleValidation.scheduleType,
+        startTime: scheduleValidation.startTime,
       });
     }
 
