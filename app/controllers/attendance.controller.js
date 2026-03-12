@@ -2,15 +2,135 @@ const db = require("../models");
 const { httpResponseCode } = require("../constants/httpResponseCode");
 const { Op } = require("sequelize");
 
+const dayjs = require("dayjs");
+const utc = require("dayjs/plugin/utc");
+const timezone = require("dayjs/plugin/timezone");
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const TZ = "Asia/Colombo";
+
+// Helper function to validate schedule and time window
+// const validateScheduleAndTime = async (classId, scanDateTime) => {
+//   const { ClassSchedule, ExtraClass } = db;
+//   const scanDate = new Date(scanDateTime);
+//   const dayOfWeek = scanDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+//   const scanTime = scanDate.toTimeString().slice(0, 5); // HH:MM format
+//   const dateOnly = scanDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+//   // First, check for extra classes on this specific date
+//   const extraClasses = await ExtraClass.findAll({
+//     where: {
+//       session_date: dateOnly,
+//       is_active: true,
+//     },
+//     include: [
+//       {
+//         model: db.Class,
+//         through: db.ExtraClassClass,
+//         where: { id: classId },
+//         as: 'classes',
+//         required: true,
+//       },
+//     ],
+//   });
+
+//   if (extraClasses.length > 0) {
+//     // Found extra class for this date, validate time window
+//     for (const extraClass of extraClasses) {
+//       const startTime = extraClass.start_time;
+//       const [startHours, startMinutes] = startTime.split(':').map(Number);
+//       const [scanHours, scanMinutes] = scanTime.split(':').map(Number);
+
+//       // Calculate start time in minutes from midnight
+//       const startTimeMinutes = startHours * 60 + startMinutes;
+//       const scanTimeMinutes = scanHours * 60 + scanMinutes;
+
+//       // Check if scan is within 1 hour before to 1 hour after start time
+//       const oneHourBefore = startTimeMinutes - 60;
+//       const oneHourAfter = startTimeMinutes + 60;
+
+//       if (scanTimeMinutes >= oneHourBefore && scanTimeMinutes <= oneHourAfter) {
+//         return {
+//           valid: true,
+//           scheduleType: 'extra',
+//           startTime: startTime,
+//           endTime: extraClass.end_time,
+//         };
+//       }
+//     }
+//     // Extra class exists but time window doesn't match
+//     const firstExtraClass = extraClasses[0];
+//     return {
+//       valid: false,
+//       error: 'TIME_WINDOW',
+//       message: `Attendance can only be marked within 1 hour before to 1 hour after the scheduled start time (${firstExtraClass.start_time})`,
+//       scheduleType: 'extra',
+//       startTime: firstExtraClass.start_time,
+//     };
+//   }
+
+//   // If no extra class, check default weekly schedule
+//   const defaultSchedules = await ClassSchedule.findAll({
+//     where: {
+//       class_id: classId,
+//       day_of_week: dayOfWeek,
+//       is_active: true,
+//     },
+//   });
+
+//   if (defaultSchedules.length === 0) {
+//     return {
+//       valid: false,
+//       error: 'NO_SCHEDULE',
+//       message: 'No scheduled class session found for this day and time',
+//     };
+//   }
+
+//   // Check if scan time is within any of the default schedules' time windows
+//   for (const schedule of defaultSchedules) {
+//     const startTime = schedule.start_time;
+//     const [startHours, startMinutes] = startTime.split(':').map(Number);
+//     const [scanHours, scanMinutes] = scanTime.split(':').map(Number);
+
+//     const startTimeMinutes = startHours * 60 + startMinutes;
+//     const scanTimeMinutes = scanHours * 60 + scanMinutes;
+
+//     const oneHourBefore = startTimeMinutes - 60;
+//     const oneHourAfter = startTimeMinutes + 60;
+
+//     if (scanTimeMinutes >= oneHourBefore && scanTimeMinutes <= oneHourAfter) {
+//       return {
+//         valid: true,
+//         scheduleType: 'default',
+//         startTime: startTime,
+//         endTime: schedule.end_time,
+//       };
+//     }
+//   }
+
+//   // Default schedule exists but time window doesn't match
+//   const firstSchedule = defaultSchedules[0];
+//   return {
+//     valid: false,
+//     error: 'TIME_WINDOW',
+//     message: `Attendance can only be marked within 1 hour before to 1 hour after the scheduled start time (${firstSchedule.start_time})`,
+//     scheduleType: 'default',
+//     startTime: firstSchedule.start_time,
+//   };
+// };
+
 // Helper function to validate schedule and time window
 const validateScheduleAndTime = async (classId, scanDateTime) => {
   const { ClassSchedule, ExtraClass } = db;
-  const scanDate = new Date(scanDateTime);
-  const dayOfWeek = scanDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  const scanTime = scanDate.toTimeString().slice(0, 5); // HH:MM format
-  const dateOnly = scanDate.toISOString().split('T')[0]; // YYYY-MM-DD format
 
-  // First, check for extra classes on this specific date
+  // Convert incoming UTC datetime to Sri Lanka time
+  const scan = dayjs.utc(scanDateTime).tz(TZ);
+  const dayOfWeek = scan.day(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  const dateOnly = scan.format("YYYY-MM-DD");
+
+  // First, check for extra classes on this specific local date
   const extraClasses = await ExtraClass.findAll({
     where: {
       session_date: dateOnly,
@@ -21,43 +141,43 @@ const validateScheduleAndTime = async (classId, scanDateTime) => {
         model: db.Class,
         through: db.ExtraClassClass,
         where: { id: classId },
-        as: 'classes',
+        as: "classes",
         required: true,
       },
     ],
   });
 
   if (extraClasses.length > 0) {
-    // Found extra class for this date, validate time window
     for (const extraClass of extraClasses) {
-      const startTime = extraClass.start_time;
-      const [startHours, startMinutes] = startTime.split(':').map(Number);
-      const [scanHours, scanMinutes] = scanTime.split(':').map(Number);
+      const scheduledStart = dayjs.tz(
+        `${dateOnly} ${extraClass.start_time}`,
+        "YYYY-MM-DD HH:mm:ss",
+        TZ,
+      );
 
-      // Calculate start time in minutes from midnight
-      const startTimeMinutes = startHours * 60 + startMinutes;
-      const scanTimeMinutes = scanHours * 60 + scanMinutes;
+      const oneHourBefore = scheduledStart.subtract(1, "hour");
+      const oneHourAfter = scheduledStart.add(1, "hour");
 
-      // Check if scan is within 1 hour before to 1 hour after start time
-      const oneHourBefore = startTimeMinutes - 60;
-      const oneHourAfter = startTimeMinutes + 60;
-
-      if (scanTimeMinutes >= oneHourBefore && scanTimeMinutes <= oneHourAfter) {
+      if (
+        scan.isSame(oneHourBefore) ||
+        scan.isSame(oneHourAfter) ||
+        (scan.isAfter(oneHourBefore) && scan.isBefore(oneHourAfter))
+      ) {
         return {
           valid: true,
-          scheduleType: 'extra',
-          startTime: startTime,
+          scheduleType: "extra",
+          startTime: extraClass.start_time,
           endTime: extraClass.end_time,
         };
       }
     }
-    // Extra class exists but time window doesn't match
+
     const firstExtraClass = extraClasses[0];
     return {
       valid: false,
-      error: 'TIME_WINDOW',
+      error: "TIME_WINDOW",
       message: `Attendance can only be marked within 1 hour before to 1 hour after the scheduled start time (${firstExtraClass.start_time})`,
-      scheduleType: 'extra',
+      scheduleType: "extra",
       startTime: firstExtraClass.start_time,
     };
   }
@@ -74,28 +194,31 @@ const validateScheduleAndTime = async (classId, scanDateTime) => {
   if (defaultSchedules.length === 0) {
     return {
       valid: false,
-      error: 'NO_SCHEDULE',
-      message: 'No scheduled class session found for this day and time',
+      error: "NO_SCHEDULE",
+      message: "No scheduled class session found for this day and time",
     };
   }
 
   // Check if scan time is within any of the default schedules' time windows
   for (const schedule of defaultSchedules) {
-    const startTime = schedule.start_time;
-    const [startHours, startMinutes] = startTime.split(':').map(Number);
-    const [scanHours, scanMinutes] = scanTime.split(':').map(Number);
+    const scheduledStart = dayjs.tz(
+      `${dateOnly} ${schedule.start_time}`,
+      "YYYY-MM-DD HH:mm:ss",
+      TZ,
+    );
 
-    const startTimeMinutes = startHours * 60 + startMinutes;
-    const scanTimeMinutes = scanHours * 60 + scanMinutes;
+    const oneHourBefore = scheduledStart.subtract(1, "hour");
+    const oneHourAfter = scheduledStart.add(1, "hour");
 
-    const oneHourBefore = startTimeMinutes - 60;
-    const oneHourAfter = startTimeMinutes + 60;
-
-    if (scanTimeMinutes >= oneHourBefore && scanTimeMinutes <= oneHourAfter) {
+    if (
+      scan.isSame(oneHourBefore) ||
+      scan.isSame(oneHourAfter) ||
+      (scan.isAfter(oneHourBefore) && scan.isBefore(oneHourAfter))
+    ) {
       return {
         valid: true,
-        scheduleType: 'default',
-        startTime: startTime,
+        scheduleType: "default",
+        startTime: schedule.start_time,
         endTime: schedule.end_time,
       };
     }
@@ -105,9 +228,9 @@ const validateScheduleAndTime = async (classId, scanDateTime) => {
   const firstSchedule = defaultSchedules[0];
   return {
     valid: false,
-    error: 'TIME_WINDOW',
+    error: "TIME_WINDOW",
     message: `Attendance can only be marked within 1 hour before to 1 hour after the scheduled start time (${firstSchedule.start_time})`,
-    scheduleType: 'default',
+    scheduleType: "default",
     startTime: firstSchedule.start_time,
   };
 };
@@ -116,33 +239,36 @@ const validateScheduleAndTime = async (classId, scanDateTime) => {
 // Simple check: payment exists and payment_status === 'paid' = paid, otherwise = pending
 const checkPaymentStatus = async (enrollmentId, scanDateTime) => {
   const { Payment } = db;
-  
+
   // Get current month and year in YYYY-MM format
   const scanDate = new Date(scanDateTime);
-  const currentMonth = scanDate.getFullYear() + '-' + String(scanDate.getMonth() + 1).padStart(2, '0');
-  
+  const currentMonth =
+    scanDate.getFullYear() +
+    "-" +
+    String(scanDate.getMonth() + 1).padStart(2, "0");
+
   // Check for payment record for this enrollment and current month
   const payment = await Payment.findOne({
     where: {
       enrollment_id: enrollmentId,
       month_year: currentMonth,
     },
-    order: [['createdAt', 'DESC']], // Get the most recent payment if multiple exist
+    order: [["createdAt", "DESC"]], // Get the most recent payment if multiple exist
   });
-  
+
   // If payment exists and is paid, mark as present
-  if (payment && payment.payment_status === 'paid') {
+  if (payment && payment.payment_status === "paid") {
     return {
       paid: true,
-      status: 'present',
+      status: "present",
       payment: payment,
     };
   }
-  
+
   // No payment or payment not paid = payment_pending
   return {
     paid: false,
-    status: 'payment_pending',
+    status: "payment_pending",
     payment: payment || null,
   };
 };
@@ -151,7 +277,13 @@ const checkPaymentStatus = async (enrollmentId, scanDateTime) => {
 exports.markManual = async (req, res) => {
   try {
     const { Attendance, StudentClass } = db;
-    const { enrollment_id, attendance_datetime, notes, override_allowed, override_reason } = req.body;
+    const {
+      enrollment_id,
+      attendance_datetime,
+      notes,
+      override_allowed,
+      override_reason,
+    } = req.body;
     const userId = req.userId; // From auth middleware
 
     if (!enrollment_id || !attendance_datetime) {
@@ -195,7 +327,7 @@ exports.markManual = async (req, res) => {
     if (!override_allowed) {
       const scheduleValidation = await validateScheduleAndTime(
         enrollmentWithClass.class.id,
-        attendance_datetime
+        attendance_datetime,
       );
 
       if (!scheduleValidation.valid) {
@@ -236,7 +368,10 @@ exports.markManual = async (req, res) => {
     // Check payment status for current month and class (unless override is allowed)
     let attendanceStatus = "present";
     if (!override_allowed) {
-      const paymentStatus = await checkPaymentStatus(enrollment.id, attendance_datetime);
+      const paymentStatus = await checkPaymentStatus(
+        enrollment.id,
+        attendance_datetime,
+      );
       attendanceStatus = paymentStatus.status; // 'present' or 'payment_pending'
     } else {
       // If override is allowed, use manual_override status
@@ -266,7 +401,10 @@ exports.markManual = async (req, res) => {
           model: StudentClass,
           as: "enrollment",
           include: [
-            { model: db.Student, attributes: ["id", "student_name", "student_id", "school"] },
+            {
+              model: db.Student,
+              attributes: ["id", "student_name", "student_id", "school"],
+            },
             { model: db.Class, attributes: ["id", "class_name", "class_code"] },
           ],
         },
@@ -279,11 +417,13 @@ exports.markManual = async (req, res) => {
       data: attendanceWithDetails,
     });
   } catch (error) {
-    return res.status(httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR).send({
-      code: httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR,
-      message: "Failed to mark attendance",
-      error: error?.message || error,
-    });
+    return res
+      .status(httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR)
+      .send({
+        code: httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR,
+        message: "Failed to mark attendance",
+        error: error?.message || error,
+      });
   }
 };
 
@@ -337,7 +477,7 @@ exports.markQRScan = async (req, res) => {
     // Validate schedule and time window
     const scheduleValidation = await validateScheduleAndTime(
       enrollmentWithClass.class.id,
-      attendance_datetime
+      attendance_datetime,
     );
 
     if (!scheduleValidation.valid) {
@@ -375,7 +515,10 @@ exports.markQRScan = async (req, res) => {
     }
 
     // Check payment status for current month and class
-    const paymentStatus = await checkPaymentStatus(enrollment.id, attendance_datetime);
+    const paymentStatus = await checkPaymentStatus(
+      enrollment.id,
+      attendance_datetime,
+    );
     const attendanceStatus = paymentStatus.status; // 'present' or 'payment_pending'
 
     // Get IP address
@@ -398,7 +541,10 @@ exports.markQRScan = async (req, res) => {
           model: StudentClass,
           as: "enrollment",
           include: [
-            { model: db.Student, attributes: ["id", "student_name", "student_id", "school"] },
+            {
+              model: db.Student,
+              attributes: ["id", "student_name", "student_id", "school"],
+            },
             { model: db.Class, attributes: ["id", "class_name", "class_code"] },
           ],
         },
@@ -411,11 +557,13 @@ exports.markQRScan = async (req, res) => {
       data: attendanceWithDetails,
     });
   } catch (error) {
-    return res.status(httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR).send({
-      code: httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR,
-      message: "Failed to mark attendance",
-      error: error?.message || error,
-    });
+    return res
+      .status(httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR)
+      .send({
+        code: httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR,
+        message: "Failed to mark attendance",
+        error: error?.message || error,
+      });
   }
 };
 
@@ -451,7 +599,10 @@ exports.list = async (req, res) => {
           model: StudentClass,
           as: "enrollment",
           include: [
-            { model: db.Student, attributes: ["id", "student_name", "student_id", "school"] },
+            {
+              model: db.Student,
+              attributes: ["id", "student_name", "student_id", "school"],
+            },
             { model: db.Class, attributes: ["id", "class_name", "class_code"] },
           ],
         },
@@ -464,11 +615,13 @@ exports.list = async (req, res) => {
       data: attendances,
     });
   } catch (error) {
-    return res.status(httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR).send({
-      code: httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR,
-      message: "Failed to fetch attendance records",
-      error: error?.message || error,
-    });
+    return res
+      .status(httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR)
+      .send({
+        code: httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR,
+        message: "Failed to fetch attendance records",
+        error: error?.message || error,
+      });
   }
 };
 
@@ -484,7 +637,10 @@ exports.getById = async (req, res) => {
           model: StudentClass,
           as: "enrollment",
           include: [
-            { model: db.Student, attributes: ["id", "student_name", "student_id", "school"] },
+            {
+              model: db.Student,
+              attributes: ["id", "student_name", "student_id", "school"],
+            },
             { model: db.Class, attributes: ["id", "class_name", "class_code"] },
           ],
         },
@@ -504,12 +660,12 @@ exports.getById = async (req, res) => {
       data: attendance,
     });
   } catch (error) {
-    return res.status(httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR).send({
-      code: httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR,
-      message: "Failed to fetch attendance record",
-      error: error?.message || error,
-    });
+    return res
+      .status(httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR)
+      .send({
+        code: httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR,
+        message: "Failed to fetch attendance record",
+        error: error?.message || error,
+      });
   }
 };
-
-
