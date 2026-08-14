@@ -69,4 +69,21 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
-module.exports = { verifyToken };
+const requireAdminOrStaff = (req, res, next) => {
+  if (req.user && ["admin", "staff"].includes(req.user.role)) {
+    return next();
+  }
+
+  return res
+    .status(StatusCodes.FORBIDDEN)
+    .send(
+      new CommonResponseDTO(
+        StatusCodes.FORBIDDEN,
+        "Administrator access required",
+        null,
+        "The authenticated user does not have permission to access this resource."
+      )
+    );
+};
+
+module.exports = { verifyToken, requireAdminOrStaff };

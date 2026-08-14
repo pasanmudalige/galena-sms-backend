@@ -5,7 +5,6 @@ const passport = require("passport");
 const cookieSession = require("cookie-session");
 const helmet = require("helmet");
 require('dotenv').config();
-const config = require('./environmentUtils');
 
 const app = express();
 
@@ -20,9 +19,20 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+const allowedOrigins = (process.env.ADMIN_FRONTEND_URL || '')
+  .split(',')
+  .map((origin) => origin.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+
 const corsOptions = {
-  origin: [process.env.ADMIN_FRONTEND_URL],
-  credentials: true, 
+  origin(origin, callback) {
+    const normalizedOrigin = origin?.replace(/\/$/, '');
+    if (!origin || allowedOrigins.includes(normalizedOrigin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+  },
+  credentials: true,
 };
 
 
@@ -43,21 +53,6 @@ app.use(fileUpload());
 // database
 
 const db = require("./app/models");
-const constants = require("./app/constants/constants");
-const Role = db.role;
-
-db.sequelize.sync().then(() => {
-  console.log('DB Sync has been established successfully.');
-})
-  .catch(err => {
-    console.error('DB Sync failed with:', err.toString());
-  });
-
-// force: true will drop the table if it already exists
-db.sequelize.sync({force: false}).then(() => {
-  console.log('Drop and Resync Database with { force: true }');
-  // initial();
-});
 
 
 app.use(helmet.frameguard({ action: "SAMEORIGIN" }));
@@ -93,7 +88,19 @@ app.use(routes);
 
 // set port, listen for requests
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}.`);
-});
+
+const startServer = async () => {
+  try {
+    await db.sequelize.sync({ force: false });
+    console.log('Database sync has been established successfully.');
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}.`);
+    });
+  } catch (error) {
+    console.error('Server startup failed:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 

@@ -455,17 +455,6 @@ exports.view = async (req, res) => {
       });
     }
 
-    // Record view
-    const ipAddress = req.ip || req.connection.remoteAddress || req.headers["x-forwarded-for"] || null;
-    const userAgent = req.headers["user-agent"] || null;
-
-    await DocumentView.create({
-      document_id: id,
-      student_id: student.id,
-      ip_address: ipAddress,
-      user_agent: userAgent,
-    });
-
     // Get file path and send file
     const filePath = path.join(__dirname, "../..", document.file_path);
     if (!fs.existsSync(filePath)) {
@@ -474,6 +463,15 @@ exports.view = async (req, res) => {
         message: "Document file not found",
       });
     }
+
+    const ipAddress = req.ip || req.connection.remoteAddress || req.headers["x-forwarded-for"] || null;
+    const userAgent = req.headers["user-agent"] || null;
+    await DocumentView.create({
+      document_id: id,
+      student_id: student.id,
+      ip_address: ipAddress,
+      user_agent: userAgent,
+    });
 
     // Set headers to prevent download and sharing
     res.setHeader("Content-Type", document.file_type === "pdf" ? "application/pdf" : `image/${document.file_type}`);

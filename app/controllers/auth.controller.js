@@ -54,7 +54,7 @@ async function sendVerificationMail(fullname, email, resetToken, res) {
 }
 
 exports.login = async (req, res) => {
-  // assume that password matches
+  try {
 
   if (req.body.email != null && req.body.email != undefined) {
     const email = req.body.email;
@@ -102,7 +102,12 @@ exports.login = async (req, res) => {
         code: httpResponseCode.HTTP_RESPONSE_OK,
         message: "User Verication Succeed.",
         accessToken: jwtToken,
-        user,
+        user: {
+          id: user.id,
+          email: user.email,
+          fullname: user.full_name,
+          role: user.role,
+        },
         email
 
       });
@@ -116,6 +121,12 @@ exports.login = async (req, res) => {
     return res.status(httpResponseCode.HTTP_RESPONSE_BAD_REQUEST).send({
       code: httpResponseCode.HTTP_RESPONSE_OK,
       message: constants.RESPONSE_MESSAGE.REQUEST_ERROR,
+    });
+  }
+  } catch (error) {
+    return res.status(httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR).send({
+      code: httpResponseCode.HTTP_RESPONSE_INTERNAL_SERVER_ERROR,
+      message: "Login failed. Please try again.",
     });
   }
 };
@@ -426,7 +437,7 @@ exports.getUserData = async (req, res) => {
       data: {
         id: user.id,
         email: user.email,
-        fullname: user.fullname,
+        fullname: user.full_name,
         isVerified: user.isVerified,
         createdAt: user.createdAt,
       },

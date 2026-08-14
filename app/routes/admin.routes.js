@@ -14,8 +14,11 @@ const paymentController = require("../controllers/payment.controller");
 const authJwt = require("../middleware/authJwt");
 
 router.post("/auth/login", authController.login);
-router.get("/auth/getDashboardData",[authJwt.verifyToken], dashboardController.getDashboardData);
 router.get("/auth/get-user-data",[authJwt.verifyToken], authController.getUserData);
+
+// Everything below this point is restricted to administrators and staff.
+router.use(authJwt.verifyToken, authJwt.requireAdminOrStaff);
+router.get("/auth/getDashboardData", dashboardController.getDashboardData);
 
 // Constants
 router.get("/constants/al-years", [authJwt.verifyToken], constantsController.getALYears);
@@ -38,14 +41,14 @@ router.delete("/classes/:id", [authJwt.verifyToken], classesController.remove);
 router.get("/enrollments", [authJwt.verifyToken], enrollmentController.list);
 router.post("/enrollments", [authJwt.verifyToken], enrollmentController.create);
 router.get("/enrollments/:id", [authJwt.verifyToken], enrollmentController.getById);
-router.get("/enrollments/qr/:qr_code", enrollmentController.getByQRCode); // Public for QR scan
+router.get("/enrollments/qr/:qr_code", enrollmentController.getByQRCode);
 router.put("/enrollments/:id", [authJwt.verifyToken], enrollmentController.update);
 router.delete("/enrollments/:id", [authJwt.verifyToken], enrollmentController.remove);
 
 // Attendance
 router.get("/attendance", [authJwt.verifyToken], attendanceController.list);
 router.post("/attendance/manual", [authJwt.verifyToken], attendanceController.markManual);
-router.post("/attendance/qr-scan", attendanceController.markQRScan); // Public for QR scan
+router.post("/attendance/qr-scan", attendanceController.markQRScan);
 router.get("/attendance/:id", [authJwt.verifyToken], attendanceController.getById);
 
 // Documents
