@@ -1,6 +1,10 @@
 'use strict';
 module.exports = {
   async up(queryInterface, Sequelize) {
+    const tables = (await queryInterface.showAllTables()).map((table) =>
+      typeof table === "string" ? table.toLowerCase() : String(table.tableName || table).toLowerCase()
+    );
+    if (tables.includes("classes")) return;
     await queryInterface.createTable('classes', {
       id: {
         type: Sequelize.INTEGER,

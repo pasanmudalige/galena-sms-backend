@@ -79,7 +79,15 @@ app.get("/", (req, res) => {
 
 // Serve static files (uploads)
 const path = require("path");
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(
+  "/uploads",
+  (req, res, next) => {
+    // Uploaded images are intentionally embedded by the separately hosted frontend.
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    next();
+  },
+  express.static(path.join(__dirname, "uploads"))
+);
 
 // routes
 const routes = require("./app/routes");

@@ -3,6 +3,7 @@ const router = express.Router();
 
 const commonRoutes = require('./common.routes');
 const adminRoutes = require('./admin.routes');
+const teacherRoutes = require('./teacher.routes');
 
 // Apply middleware for all routes
 router.use((req, res, next) => {
@@ -12,5 +13,6 @@ router.use((req, res, next) => {
 
 router.use('/v1/api/common', commonRoutes);
 router.use('/v1/api/admin', adminRoutes);
+router.use('/v1/api/teacher', teacherRoutes);
 
 module.exports = router;

@@ -1,7 +1,11 @@
 'use strict';
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('attendance', {
+    const tables = (await queryInterface.showAllTables()).map((table) =>
+      typeof table === "string" ? table.toLowerCase() : String(table.tableName || table).toLowerCase()
+    );
+    if (tables.includes("attendances")) return;
+    await queryInterface.createTable('attendances', {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
@@ -59,6 +63,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('attendance');
+    await queryInterface.dropTable('attendances');
   }
 };

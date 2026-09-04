@@ -35,6 +35,10 @@ db.ClassSchedule = require("./class-schedule.model.js")(sequelize, Sequelize);
 db.ExtraClass = require("./extra-class.model.js")(sequelize, Sequelize);
 db.ExtraClassClass = require("./extra-class-class.model.js")(sequelize, Sequelize);
 db.Payment = require("./payments.model.js")(sequelize, Sequelize);
+db.QuizProgramme = require("./quiz-programme.model.js")(sequelize, Sequelize);
+db.QuizQuestion = require("./quiz-question.model.js")(sequelize, Sequelize);
+db.QuizAnswer = require("./quiz-answer.model.js")(sequelize, Sequelize);
+db.QuizTeam = require("./quiz-team.model.js")(sequelize, Sequelize);
 
 // Associations
 db.Student.belongsToMany(db.Class, {
@@ -112,5 +116,14 @@ db.Class.hasMany(db.ExtraClassClass, { foreignKey: 'class_id', as: 'extraClassCl
 // Payment associations
 db.Payment.belongsTo(db.StudentClass, { foreignKey: 'enrollment_id', as: 'enrollment' });
 db.StudentClass.hasMany(db.Payment, { foreignKey: 'enrollment_id', as: 'payments' });
+
+db.QuizProgramme.belongsTo(db.User, { foreignKey: "teacher_id", as: "teacher" });
+db.User.hasMany(db.QuizProgramme, { foreignKey: "teacher_id", as: "quizProgrammes" });
+db.QuizProgramme.hasMany(db.QuizQuestion, { foreignKey: "quiz_programme_id", as: "questions", onDelete: "CASCADE" });
+db.QuizQuestion.belongsTo(db.QuizProgramme, { foreignKey: "quiz_programme_id", as: "programme" });
+db.QuizQuestion.hasMany(db.QuizAnswer, { foreignKey: "question_id", as: "answers", onDelete: "CASCADE" });
+db.QuizAnswer.belongsTo(db.QuizQuestion, { foreignKey: "question_id", as: "question" });
+db.QuizProgramme.hasMany(db.QuizTeam, { foreignKey: "quiz_programme_id", as: "teams", onDelete: "CASCADE" });
+db.QuizTeam.belongsTo(db.QuizProgramme, { foreignKey: "quiz_programme_id", as: "programme" });
 
 module.exports = db;

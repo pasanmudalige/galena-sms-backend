@@ -86,4 +86,11 @@ const requireAdminOrStaff = (req, res, next) => {
     );
 };
 
-module.exports = { verifyToken, requireAdminOrStaff };
+const requireTeacher = (req, res, next) => {
+  if (req.user?.role === "teacher") return next();
+  return res.status(StatusCodes.FORBIDDEN).send(
+    new CommonResponseDTO(StatusCodes.FORBIDDEN, "Teacher access required", null, "This resource is available to teachers only.")
+  );
+};
+
+module.exports = { verifyToken, requireAdminOrStaff, requireTeacher };

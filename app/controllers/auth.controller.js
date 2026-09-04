@@ -440,6 +440,8 @@ exports.getUserData = async (req, res) => {
         fullname: user.full_name,
         isVerified: user.isVerified,
         createdAt: user.createdAt,
+        role: user.role,
+        fullname: user.full_name,
       },
     });
   } catch (error) {
