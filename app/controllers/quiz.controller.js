@@ -130,14 +130,28 @@ exports.update = async (req, res) => {
 };
 
 exports.remove = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
   try {
-    const programme = await owned(req.params.id, req.userId, { include });
-    if (!programme) return res.status(404).send({ code: 404, message: "Quiz programme not found" });
+    const programme = await owned(req.params.id, req.userId, { include, transaction });
+    if (!programme) {
+      await transaction.rollback();
+      return res.status(404).send({ code: 404, message: "Quiz programme not found" });
+    }
     const images = imagePathsFrom(programme);
-    await programme.destroy();
+    const questionIds = programme.questions.map((question) => question.id);
+    if (questionIds.length) {
+      await db.QuizAnswer.destroy({ where: { question_id: questionIds }, transaction });
+    }
+    await db.QuizQuestion.destroy({ where: { quiz_programme_id: programme.id }, transaction });
+    await db.QuizTeam.destroy({ where: { quiz_programme_id: programme.id }, transaction });
+    await programme.destroy({ transaction });
+    await transaction.commit();
     removeQuizImages(images);
     return res.send({ code: 200, message: "Quiz programme deleted" });
-  } catch (error) { return res.status(500).send({ code: 500, message: "Failed to delete quiz programme", error: error.message }); }
+  } catch (error) {
+    await transaction.rollback();
+    return res.status(500).send({ code: 500, message: "Failed to delete quiz programme", error: error.message });
+  }
 };
 
 exports.uploadImage = async (req, res) => {
